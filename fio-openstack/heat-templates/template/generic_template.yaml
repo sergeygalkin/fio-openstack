@@ -1,0 +1,84 @@
+heat_template_version: 2017-02-24
+
+parameters:
+  assign_floating_ip:
+    type: boolean
+    default: false
+  cluster_public_net:
+    type: string
+    description: ID or name of public network
+  network01_dhcp:
+    type: boolean
+    default: true
+  cluster_zone:
+    type: string
+    default: nova
+  cluster_domain:
+    type: string
+  cluster_name:
+    type: string
+    default: fio-test-volumes
+  cluster_key:
+    type: string
+    default: jenkins-mk
+  cluster_nameservers:
+    type: comma_delimited_list
+    description: DNS nameservers to be assigned to nodes
+  node_count:
+    type: string
+    default: 1
+  volume_size:
+    type: number
+    default: 110
+  network_port_security_enabled:
+    type: boolean
+    description: enable/disable port security on networks
+    default: false
+
+resources:
+  mcp_network:
+    type: MCP::Network
+    properties:
+      stack_name: { get_param: "OS::stack_name" }
+      public_net: { get_param: cluster_public_net }
+      nameservers: { get_param: cluster_nameservers }
+      network01_dhcp:  { get_param: network01_dhcp }
+      network_port_security_enabled:  { get_param: network_port_security_enabled }
+  mcp_router:
+    type: MCP::Router
+    depends_on: mcp_network
+    properties:
+      stack_name: { get_param: "OS::stack_name" }
+      public_net: { get_param: cluster_public_net }
+      private_net: { list_join: ['-', [get_param: "OS::stack_name", 'net01']] }
+      network: { get_attr: [mcp_network, network] }
+      network01_static_ip:
+        list_join:
+        - '.'
+        - [ { get_attr: [mcp_network, network01_prefix] }, '10' ]
+  mcp_cluster:
+    type: MCP::Cluster
+    depends_on: [ mcp_network, mcp_router ]
+    properties:
+      key_pair: { get_param: cluster_key }
+      network: { get_attr: [mcp_network, network] }
+      network_port_security_enabled: { get_param: network_port_security_enabled }
+      network01_prefix: { get_attr: [mcp_network, network01_prefix] }
+      instance_name: fio-test
+      instance_count: { get_param: node_count }
+      instance_domain:
+        list_join:
+        - '.'
+        - [ { get_param: "OS::stack_name" }, { get_param: cluster_domain } ]
+      instance_cluster: { get_param: "OS::stack_name" }
+      instance_zone: { get_param: cluster_zone }
+      instance_os: xenial
+      instance_image: Ubuntu-18.04
+      instance_flavor: fio.test
+      volume_size: { get_param: volume_size }
+      instance_cloud_init: |
+        # todo
+# outputs:
+#   maas_ip:
+#     value: { get_attr: [maas, instance_public_address] }
+#     description: "Public IP address of the MAAS"

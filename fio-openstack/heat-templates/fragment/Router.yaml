@@ -1,0 +1,40 @@
+heat_template_version: 2017-02-24
+
+description: Router
+
+parameters:
+  stack_name:
+    type: string
+  public_net:
+    type: string
+    description: ID or name of public network for which router will be allocated.
+  private_net:
+    type: string
+    description: ID or name of private network for which router will be allocated.
+  network:
+    type: string
+  network01_static_ip:
+    type: string
+
+resources:
+  router_port01:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { list_join: ['-', [get_param: network, 'net01']] }
+      fixed_ips:
+        - subnet: { list_join: ['-', [get_param: network, 'net01']] }
+          ip_address: { get_param: network01_static_ip }
+
+  router01:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+            network: { get_param: public_net }
+  router01_interface:
+        type: OS::Neutron::RouterInterface
+        properties:
+          router_id: { get_resource: router01 }
+          subnet_id: { get_param: private_net }
+outputs:
+  router_name:
+    value: { get_attr: [router01, name] }

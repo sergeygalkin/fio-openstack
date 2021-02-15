@@ -1,0 +1,64 @@
+heat_template_version: 2017-02-24
+
+description: Network fragment
+
+parameters:
+  stack_name:
+    type: string
+  public_net:
+    type: string
+    description: ID or name of public network for which router will be allocated.
+  nameservers:
+    type: comma_delimited_list
+  network01_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+    default: 10.0.0.0/16
+  network01_pool_start:
+    type: string
+    description: Start of private network IP address allocation pool
+    default: 10.0.100.1
+  network01_pool_end:
+    type: string
+    description: End of private network IP address allocation pool
+    default: 10.0.199.255
+  network01_dhcp:
+    type: boolean
+    description: Enable/Disable dhcp in network1
+    default: true
+  network_port_security_enabled:
+    type: boolean
+    description: enable/disable port security on networks
+    default: false
+
+
+resources:
+  network01:
+    type: OS::Neutron::Net
+    properties:
+      name: { list_join: ['-', [get_param: stack_name, 'net01']] }
+      port_security_enabled: { get_param: network_port_security_enabled }
+  subnet01:
+    type: OS::Neutron::Subnet
+    properties:
+      name: { list_join: ['-', [get_param: stack_name, 'net01']] }
+      network: { get_resource: network01 }
+      cidr: { get_param: network01_cidr }
+      enable_dhcp: { get_param: network01_dhcp }
+      dns_nameservers: { get_param: nameservers }
+      allocation_pools:
+        - start: { get_param: network01_pool_start }
+          end: { get_param: network01_pool_end }
+
+outputs:
+  network:
+    value: { get_param: stack_name }
+  network01_subnet:
+    value: { get_resource: subnet01 }
+  network01_prefix:
+    value:
+      list_join:
+        - '.'
+        - - str_split: ['.', { get_param: network01_cidr }, 0]
+          - str_split: ['.', { get_param: network01_cidr }, 1]
+          - str_split: ['.', { get_param: network01_cidr }, 2]
