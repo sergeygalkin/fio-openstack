@@ -24,8 +24,8 @@ fi
 
 echo_inform "Prepare cluster"
 if [ ! -f heat-templates/ssh-keys/ssh_key.pub ]; then
-    echo "Please generate ssh keys in heat-templates/ssh-keys"
-    echo 1
+    echo "Please generate ssh keys in heat-templates/ssh-keys with 'ssh-keygen -f heat-templates/ssh-keys/ssh_key; chmod 600 heat-templates/ssh-keys/ssh_key'"
+    exit 1
 fi
 openstack quota set --ram -1 --cores -1 --fixed-ips -1 --instances -1 --per-volume-gigabytes -1 --gigabytes -1 --volumes -1 --floating-ips -1 --server-groups -1 --server-group-members -1 admin
 openstack flavor show ${MAIN_PREFIX}.test || openstack flavor create --vcpus 4 --disk 110 --ram 4096 ${MAIN_PREFIX}.test

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 cd $(dirname $(readlink -f "$0"))
 
 source variables.sh
@@ -6,7 +6,9 @@ source functions.sh
 
 svc-reset-io () {
     for i in cat $1; do
-        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/source/vm_key root@$i 'sync; echo 3 > /proc/sys/vm/drop_caches; blockdev --flushbufs /dev/vdc'
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -i heat-templates/ssh-keys/hw_lab_ssh_key ubuntu@$i \
+        'sync; sudo bash -c "echo 3 > /proc/sys/vm/drop_caches"; sudo blockdev --flushbufs /dev/vdc'
     done
 }
 
